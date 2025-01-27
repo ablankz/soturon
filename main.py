@@ -4,19 +4,18 @@ import pandas as pd
 from decimal import *
 from math import *
 import time
-import numpy as np
-import vi
 from select_node import select_nearest_sink_node
 
 # パラメータの設定
 TOTAL_SIMULATIONS = 3000 #人の数
 MAX_SIMULATION_TIME = 1500  # シミュレーション最大の時間（秒）
+MAX_SIMULATION_TIME = inf
 ALPHA = 1.919 #BPRのα 参考論文から1.919 or 1.4118
 BETA = 6.9373 #BPRのβ 参考論文から6.9373 or 5.0365
 SINK_NODE_1 = 81  # 避難所1のノードID
 SINK_NODE_2 = 213  # 避難所2のノードID
 HUMAN_SPEED = 1.25  # 人の速度（m/s）
-TIME_INTERVAL = 1  # 時間間隔
+TIME_INTERVAL = 0.0001  # 時間間隔
 
 random.seed(1) #ランダムの固定化
 start_time = time.time() #実行時間開始
@@ -40,9 +39,11 @@ capacity_coefficients = {'trunk': 10,'primary': 10,'tertiary': 10,'unclassified'
 
 # 移動時間と容量を持たせたグラフ作成
 capacity_map = {}
-time_map = {}
+init_time_map = {}
+current_travel_time_map = {}
 now_map = {}
-g_count_map = {}
+pass_count_map = {}
+n_di_map = {}
 time_edges = []
 for _, row in edges_df.iterrows():
     source_node = node_id_map[row['u']]
@@ -52,23 +53,18 @@ for _, row in edges_df.iterrows():
     highway_type = row['highway']
     coefficient = capacity_coefficients.get(highway_type, 1)
     capacity = round(coefficient * length, 2)
-    time_edges.append((source_node, target_node, {'travel_time': travel_time, 'capacity': capacity}))
+    # 重み付きエッジを追加
+    graph_with_time.add_edge(source_node, target_node, weight=travel_time)
     key = (source_node, target_node)
+    # キャパシティと移動時間を保存
     capacity_map[key] = capacity
-    time_map[key] = travel_time
+    init_time_map[key] = travel_time
+    current_travel_time_map[key] = travel_time
     now_map[key] = 0
-    g_count_map[key] = 0
-graph_with_time.add_weighted_edges_from(time_edges)
-
-n_di_map = {}
-for i, row in edges_df.iterrows():
-    source_node = node_id_map[row['u']]
-    target_node = node_id_map[row['v']]
-    key = (source_node, target_node)
-    length = row['length']
+    pass_count_map[key] = 0
     n_di_map[key] = length
-
-def dijkstra_with_nx_dijkstra_path(graph) -> tuple[list, int, int]:
+    
+def dijkstra_with_nx_dijkstra_path(graph):
     paths = []
     error_count = 0
     goal_select = 0
@@ -79,15 +75,11 @@ def dijkstra_with_nx_dijkstra_path(graph) -> tuple[list, int, int]:
             if start in (SINK_NODE_1, SINK_NODE_2):
                 goal_select += 1
                 continue
-            # `nx.dijkstra_path` を使って最短経路を取得
-            path = nx.dijkstra_path(graph, source=start, target=select_nearest_sink_node(graph_with_time, start), weight='length')
-            # 距離を計算
-            # length = nx.dijkstra_path_length(graph, source=start, target=select_nearest_sink_node(start), weight='length')
+            path = nx.dijkstra_path(graph, source=start, target=select_nearest_sink_node(graph_with_time, start), weight='weight')
             length = 0
             for j in range(len(path)-1):
                 key = (path[j], path[j+1])
                 length += n_di_map[key]
-            # 結果を保存
             paths.append((length, path))
             i += 1
         except nx.NetworkXNoPath:
@@ -106,113 +98,103 @@ paths.sort(key=lambda x: x[0])
 #　距離による並び替え（ランダム）
 # random.shuffle(paths)
 
+# 避難者の状態
+yet = []
+# 避難完了した避難者
+terminated = {}
+# 避難完了した避難者の数
+term_count = 0
 
-# 並び替え後避難者のスタート位置
-current = {}
-yet = {}
 for i, value in enumerate(paths):
     init_start_node = value[1][0]
-    init_target_node = value[1][1]
+    # 現在、最も移動時間が短い経路を選択
+    path = nx.dijkstra_path(
+        graph_with_time, 
+        source=init_start_node,
+        target=select_nearest_sink_node(graph_with_time, init_start_node),
+        weight='weight'
+    )
+    # 現在、最も移動時間が短い経路を通る場合の次のノード
+    init_target_node = path[1]
     key = (init_start_node, init_target_node)
-    travel_time = time_map[key]
-    g_count_map[key] += 1
-    current[i] = {
-        "node": init_start_node,
-        "index": 0,
+    travel_time = current_travel_time_map[key]
+    current = {
+        "node_to_node": key,
         "from_index": 0,
         "need_time": travel_time
     }
-    yet[i] = True
+    yet.append(current)
+    terminated[i] = False   
+    # そこの道を通る人数をカウント  
+    pass_count_map[key] += 1
+    # 移動時間の算出
+    updated_travel_time = init_time_map[key] * (1 + ALPHA * ((pass_count_map[key] / capacity_map[key]) ** BETA))
+    # グラフ上の移動時間を更新
+    nx.set_edge_attributes(graph_with_time, {key: {'weight': updated_travel_time}})
+    # 移動時間の更新
+    current_travel_time_map[key] = updated_travel_time
 
 # 時間によるシミュレート
-time=0
+ctime=0
 
 evac_time = {}
 
 # 初期化済みのnow_mapを使う
 # シミュレーションの実行
-while(len(yet) != 0 or time < MAX_SIMULATION_TIME):
-    for i, value in enumerate(paths):
-        if i not in yet:
+while(ctime <= MAX_SIMULATION_TIME and term_count < TOTAL_SIMULATIONS):
+    for i, current in enumerate(yet):
+        if terminated[i]: # 避難完了した避難者はスキップ
             continue
-        current[i]["from_index"] += TIME_INTERVAL
+        # 今のノードからどれだけ時間が経過したか
+        current["from_index"] += TIME_INTERVAL
         # 時間が経過したら次のノードに移動
-        if current[i]["from_index"] >= current[i]["need_time"]:
-            prev_key = (current[i]["node"], value[1][current[i]["index"]+1])
-            g_count_map[prev_key] -= 1
-            current[i]["node"] = value[1][current[i]["index"]+1]
-            current[i]["index"] += 1
-            if current[i]["index"] == len(value[1])-1:
-                print(f"避難者{i+1}は避難所に到達しました, 残り人数: {len(yet)}")
-                evac_time[i] = time
-                yet.pop(i)
+        if current["from_index"] >= current["need_time"]:
+            key = current["node_to_node"]
+            # 今のノードから出る人数をマイナス
+            pass_count_map[key] -= 1
+            # 更新後移動時間を計算
+            updated_travel_time = init_time_map[key] * (1 + ALPHA * ((pass_count_map[key] / capacity_map[key]) ** BETA))
+            # グラフ上の移動時間を更新
+            nx.set_edge_attributes(graph_with_time, {key: {'weight': updated_travel_time}})
+            # 移動時間の更新
+            current_travel_time_map[key] = updated_travel_time
+            if key[1] in (SINK_NODE_1, SINK_NODE_2): # 到達ノードがゴールであった場合
+                print(f"避難者{i+1}は避難所に到達しました, 残り人数: {TOTAL_SIMULATIONS - term_count} 現在時刻: {ctime}")
+                # ゴール到達時間
+                evac_time[i] = ctime
+                # 避難完了した避難者を更新
+                terminated[i] = True
+                # 避難完了した避難者の数を更新
+                term_count += 1
                 continue
-            key = (current[i]["node"], value[1][current[i]["index"]+1])
-            g_count_map[key] += 1
-            current[i]["need_time"] = time_map[key] * (1 + ALPHA * ((g_count_map[key] / capacity_map[key]) ** BETA))
-            current[i]["from_index"] = 0
-    time += TIME_INTERVAL
+            # 最適パスを選択
+            path = nx.dijkstra_path(
+                graph_with_time, 
+                source=key[1], # いま到着したノード
+                target=select_nearest_sink_node(graph_with_time, key[1]),
+                weight='weight'
+            )
+            # 次のノードを選択
+            next_node = path[1]
+            # いま到着したノードから次のノード
+            key = (key[1], next_node)
+            current["node_to_node"] = key
+            # その道を通る人数をカウント
+            pass_count_map[key] += 1
+            # 自分が含まれていない移動時間
+            current["need_time"] = current_travel_time_map[key]
+            # 更新後移動時間を計算
+            updated_travel_time = init_time_map[key] * (1 + ALPHA * ((pass_count_map[key] / capacity_map[key]) ** BETA))
+            # グラフ上の移動時間を更新
+            nx.set_edge_attributes(graph_with_time, {key: {'weight': updated_travel_time}})
+            # 移動時間の更新
+            current_travel_time_map[key] = updated_travel_time
+            # 次のノードでの経過時間を0にリセット
+            current["from_index"] = 0
+    ctime += TIME_INTERVAL
 
 for k, v in evac_time.items():
     print(f"避難者{k+1}の避難時間: {v}")
 
-exit()
-# 経路選択
-
-res = {}
-for i, value in enumerate(paths):
-    path = value[1]
-    time = 0
-    for j in range(len(path)-1):
-        key = (path[j], path[j+1])
-        capacity = capacity_map[key]
-        traffic = g_count_map[key]
-        distance = n_di_map[key]
-        time += (distance/HUMAN_SPEED) * (1 + ALPHA * ((traffic / capacity) ** BETA))
-        print(f"エッジ{key}の容量: {capacity}, 交通量: {traffic}, 距離: {distance}, 時間: {time}")
-    res[i] = time
-        
-        
-    # print(f"避難者 {i+1}:{p}")
-print(f"到達不能な避難者数: {no_path_count}")
-print(f"避難所を選択した避難者数: {from_goal_count}")
-
-for k, v in res.items():
-    print(f"避難者{k+1}の避難時間: {v}")
-
-
-# print(g_count_map)
-# print(capacity_map)
-
-def create_time_expanded_graph():
-    time_intervals = np.arange(0.0, MAX_SIMULATION_TIME + 1, 1)
-    time_expanded_graph = nx.DiGraph()
-
-    # 各ノードの時間ステップエッジを作成
-    for node in graph_with_time.nodes:
-        for current_time in time_intervals:
-            if current_time + 1 > MAX_SIMULATION_TIME:
-                break
-            time_expanded_graph.add_edge((node, current_time), (node, current_time + 1), travel_time=0, capacity=10000, traffic=0, adjusted_travel_time=0)
-
-    # 元のエッジに基づいた時間付きエッジを作成(travel_time:移動時間, capacity:容量, traffic:交通量, adjusted_travel_time:交通量を考慮した移動時間)
-    for source, neighbors in graph_with_time.adjacency():
-        for target, edge_data in neighbors.items():
-            for start_time in time_intervals:
-                travel_time = edge_data['weight']['travel_time']
-                capacity = edge_data['weight']['capacity']
-                time_expanded_graph.add_edge((source, start_time), (target, start_time + int(travel_time)), travel_time=travel_time, capacity=capacity, traffic=0, adjusted_travel_time=travel_time)
-
-    return time_expanded_graph
-
-def simulate_evacuation(total_evacuations):
-    time_expanded_graph = create_time_expanded_graph()
-
-
-
-
-
-
-
-# end_time = time.time()  # 実行時間計測終了
-# print(f"計算時間：{end_time - start_time:.2f}秒")
+end_time = time.time()
+print(f"実行時間: {end_time - start_time}秒")
