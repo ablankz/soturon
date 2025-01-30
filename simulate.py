@@ -97,22 +97,28 @@ def simulate(
         error_count = 0
         goal_select = 0
         i = 0
-        while(i != simulations):
+
+        node_choice_list = []
+        while(i != 500):
             try:
-                start = rnd.choice(list(graph_with_time.nodes))
+                start = rnd.choice(list(graph.nodes))
                 if start in (SINK_NODE_1, SINK_NODE_2):
-                    goal_select += 1
                     continue
-                path = nx.dijkstra_path(graph, source=start, target=select_nearest_sink_node(graph_with_time, start), weight='weight')
+                path = nx.dijkstra_path(graph, source=start, target=select_nearest_sink_node(graph, start), weight='weight')
                 length = 0
                 for j in range(len(path)-1):
                     source_target = (path[j], path[j+1])
                     length += n_di_dict[source_target]
-                paths.append((length, path, i))
+                node_choice_list.append((length, path))
                 i += 1
             except nx.NetworkXNoPath:
-                error_count += 1
-                continue    
+                continue
+    
+        i = 0
+        while(i != simulations):
+            node = node_choice_list[i % 500]
+            paths.append((node[0], node[1], i))
+            i += 1
 
         return paths, error_count, goal_select
 
@@ -129,10 +135,12 @@ def simulate(
     speed_list = []
 
     speed_map = {}
+    length_map = {}
     for i, path in enumerate(c_paths):
         sp = i // sp_per_path
         speed_list.append((human_speeds[sp]))
         speed_map[path[2]] = human_speeds[sp]
+        length_map[path[2]] = path[0]
 
     if (order == 'near'):
         paths.sort(key=lambda x: x[0])
@@ -283,6 +291,7 @@ def simulate(
     
     simulation_df = pd.DataFrame.from_dict(evac_time, orient='index', columns=['evac_time'])
     simulation_df['speed'] = simulation_df.index.map(speed_map)
+    simulation_df['length'] = simulation_df.index.map(length_map)
     simulation_df['evac_time'] = simulation_df['evac_time'].astype(float)
     simulation_df = simulation_df.sort_values(by='evac_time')
     
