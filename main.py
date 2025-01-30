@@ -31,9 +31,11 @@ patterns = [
     # # 計算リソースの消費が大きいが、避難者が混んでいる道を避けることをシミュレートすることができる。
 
     # # # 4. 提案手法の内部比較(順序による違い)
-    # bpr('travel_time', 'near', 1000, [1.25, 1.0, 1.5], 1.919, 6.9373),
-    # bpr('travel_time', 'far', 1000, [1.25, 1.0, 1.5], 1.919, 6.9373),
-    # bpr('travel_time', 'random', 1000, [1.25, 1.0, 1.5], 1.919, 6.9373),
+    bpr('travel_time', 'near', 1000, [1.25, 1.0, 1.5], 1.919, 6.9373),
+    bpr('travel_time', 'far', 1000, [1.25, 1.0, 1.5], 1.919, 6.9373),
+    bpr('travel_time', 'random', 1000, [1.25, 1.0, 1.5], 1.919, 6.9373),
+
+    bpr('length', 'random', 1000, [1.25, 1.0, 1.5], 1.919, 6.9373),
 
     # # 避難を時間間隔おきに行動を開始する避難者の優先順位を変更することで、避難所までの所要時間が変化することがわかる。
 
@@ -41,8 +43,8 @@ patterns = [
     # bpr('travel_time', 'near', 1000, [1.25, 1.0, 1.5], 1.919, 6.9373),
     # bpr('length', 'near', 1000, [1.25, 1.0, 1.5], 1.919, 6.9373),
 
-    bpr('length', 'near', 1500, [1.25, 1.0, 1.5], 1.919, 6.9373),
-    bpr('travel_time', 'near', 1500, [1.25, 1.0, 1.5], 1.919, 6.9373),
+    # bpr('length', 'near', 1500, [1.25, 1.0, 1.5], 1.919, 6.9373),
+    # bpr('travel_time', 'near', 1500, [1.25, 1.0, 1.5], 1.919, 6.9373),
 ]
 
 time_df = pd.DataFrame()
@@ -76,11 +78,11 @@ for i, pt in enumerate(patterns):
     ev_time.index = np.arange(1, len(ev_time)+1)
     res_df[f'{pt["title"]}'] = ev_time
 
-res_df.to_csv('simulations.csv', index=False, encoding='utf-8-sig')
-time_df.to_csv('time.csv', index=False, encoding='utf-8-sig')
-speed_df.to_csv('speed.csv', index=False, encoding='utf-8-sig')
+res_df.to_csv('outputs/simulations.csv', index=False, encoding='utf-8-sig')
+time_df.to_csv('outputs/time.csv', index=False, encoding='utf-8-sig')
+speed_df.to_csv('outputs/speed.csv', index=False, encoding='utf-8-sig')
 
-res_df = pd.read_csv('simulations.csv')
+res_df = pd.read_csv('outputs/simulations.csv')
 
 plt.figure(figsize=(8, 5))
 for column in res_df.columns:
@@ -94,4 +96,4 @@ plt.legend()
 plt.grid(True)
 
 # グラフを表示
-plt.savefig('plot.png') 
+plt.savefig('plot/plot.png') 
