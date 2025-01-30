@@ -25,7 +25,8 @@ def simulate(
         order: Order='near',
         simulations: int=3000,
         max_time: int=inf,
-        human_speed: float=1.25,
+        human_speeds: list=[1.25],
+        default_human_speed: float=1.25,
         time_interval: float=1,
         arrival_callback=default_arrival_callback,
         v_min: float=0.03,
@@ -57,7 +58,7 @@ def simulate(
     # ノードIDを取得して1次元配列に変換後、重複を削除
     unique_nodes = pd.unique(edges_df[['u', 'v']].values.ravel('K'))
     node_id_dict = {node: idx + 1 for idx, node in enumerate(unique_nodes)}
-    edges_df['travel_time'] = (edges_df['length'] / human_speed).round(4)
+    edges_df['travel_time'] = (edges_df['length'] / default_human_speed).round(4)
     edges_df = edges_df[['u', 'v', 'length', 'travel_time', 'highway']]
     # 道路タイプごとのキャパシティ係数
     capacity_coefficients = {'trunk': 10,'primary': 10,'tertiary': 10,'unclassified': 5,'secondary': 5,'footway': 2,'foot': 2,'residential': 2}
@@ -107,7 +108,7 @@ def simulate(
                 for j in range(len(path)-1):
                     source_target = (path[j], path[j+1])
                     length += n_di_dict[source_target]
-                paths.append((length, path))
+                paths.append((length, path, i))
                 i += 1
             except nx.NetworkXNoPath:
                 error_count += 1
@@ -116,6 +117,22 @@ def simulate(
         return paths, error_count, goal_select
 
     paths, no_path_count, from_goal_count = dijkstra_with_nx_dijkstra_path(graph_with_time)
+
+    # paths.sort(key=lambda x: x[0])
+    c_paths = rnd.shuffle(paths)
+    # 人数
+    path_length = len(paths)
+    human_speeds.sort()
+    speed_count = len(human_speeds)
+    # 近いほど遅い速度
+    sp_per_path = path_length // speed_count + 1
+    speed_list = []
+
+    speed_map = {}
+    for i, path in enumerate(c_paths):
+        sp = i // sp_per_path
+        speed_list.append((human_speeds[sp]))
+        speed_map[path[2]] = human_speeds[sp]
 
     if (order == 'near'):
         paths.sort(key=lambda x: x[0])
@@ -163,7 +180,7 @@ def simulate(
             pass_count_dict[source_target], 
             capacity_dict[source_target], 
             model=model,
-            V_DEFAULT=human_speed,
+            V_DEFAULT=speed_list[i],
             V_MIN=v_min,
             EXPONENTIAL_ALPHA=exponential_alpha,
             BPR_ALPHA=bpr_alpha,
@@ -192,13 +209,14 @@ def simulate(
                 source_target = current["node_to_node"]
                 # 今のノードから出る人数をマイナス
                 pass_count_dict[source_target] -= 1
+                human = paths[i]
                 # 更新後移動時間を計算
                 after_bpr_time = compute_travel_time(
                     n_di_dict[source_target], 
                     pass_count_dict[source_target], 
                     capacity_dict[source_target], 
                     model=model,
-                    V_DEFAULT=human_speed,
+                    V_DEFAULT=speed_list[i],
                     V_MIN=v_min,
                     EXPONENTIAL_ALPHA=exponential_alpha,
                     BPR_ALPHA=bpr_alpha,
@@ -248,7 +266,7 @@ def simulate(
                     pass_count_dict[source_target], 
                     capacity_dict[source_target], 
                     model=model,
-                    V_DEFAULT=human_speed,
+                    V_DEFAULT=speed_list[i],
                     V_MIN=v_min,
                     EXPONENTIAL_ALPHA=exponential_alpha,
                     BPR_ALPHA=bpr_alpha,
@@ -264,7 +282,8 @@ def simulate(
         ctime += time_interval
     
     simulation_df = pd.DataFrame.from_dict(evac_time, orient='index', columns=['evac_time'])
-    simulation_df['evac_time'] = simulation_df['evac_time'].astype(int)
+    simulation_df['speed'] = simulation_df.index.map(speed_map)
+    simulation_df['evac_time'] = simulation_df['evac_time'].astype(float)
     simulation_df = simulation_df.sort_values(by='evac_time')
     
     return simulation_df
