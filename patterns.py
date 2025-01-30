@@ -27,12 +27,11 @@ def exponential(
         human_speeds: list = [1.25],
         v_min: float = 0.03,
         exponential_alpha: float = 2.0,
+        title: str = None,
 ) -> dict:
     # title = f'Exponential {weight.capitalize()} {order.capitalize()} {simulation} {human_speeds.__str__()} {v_min} {exponential_alpha}'
-    if weight == 'travel_time':
+    if title is None:
         title = f'指数関数 {weight_map[weight]} {order_map[order]}'
-    else:
-        title = f'指数関数 {weight_map[weight]}'
     pattern = {
         'model': 'exponential',
         'human_speeds': human_speeds,
@@ -58,12 +57,11 @@ def bpr(
         human_speeds: list = [1.25],
         bpr_alpha: float = DEFAULT_BPR_ALPHA,
         bpr_beta: float = DEFAULT_BPR_BETA,
+        title: str = None,
 ) -> dict:
     # title = f'BPR {weight.capitalize()} {order.capitalize()} {simulation} {human_speeds.__str__()} {bpr_alpha} {bpr_beta}'
-    if weight == 'travel_time':
+    if title is None:
         title = f'BPR {weight_map[weight]} {order_map[order]}'
-    else:
-        title = f'BPR {weight_map[weight]}'
     pattern = {
         'human_speeds': human_speeds,
         'model': 'bpr',
@@ -87,12 +85,11 @@ def greenshields(
         simulation: int = 1000,
         human_speeds: list = [1.25],
         v_min: float = 0.03,
+        title: str = None,
 ) -> dict:
     # title = f'Greenshields {weight.capitalize()} {order.capitalize()} {simulation} {human_speeds.__str__()} {v_min}'
-    if weight == 'travel_time':
+    if title is None:
         title = f'グリーンシールズ {weight_map[weight]} {order_map[order]}'
-    else:
-        title = f'グリーンシールズ {weight_map[weight]}'
     pattern = {
         'model': 'greenshields',
         'weight': weight,
