@@ -16,10 +16,12 @@ patterns = [
     # bpr('travel_time', 'near', 2000, 1.25, 1.919, 6.9373),
 ]
 
+time_df = pd.DataFrame()
 res_df = pd.DataFrame()
 for i, pt in enumerate(patterns):
     print(f"{pt['title']}")
     p = pt['pattern']
+    start_time = pd.Timestamp.now()
     res = simulate(
         model=p['model'],
         weight=p['weight'],
@@ -32,11 +34,16 @@ for i, pt in enumerate(patterns):
         bpr_alpha=p['bpr_alpha'],
         bpr_beta=p['bpr_beta']
     )
+    end_time = pd.Timestamp.now()
+    elapsed_time = end_time - start_time
+    print(f"elapsed_time: {elapsed_time}")
+    time_df[f'{pt["title"]}'] = [elapsed_time]
     ev_time = res['evac_time']
     ev_time.index = np.arange(1, len(ev_time)+1)
     res_df[f'{pt["title"]}'] = ev_time
 
 res_df.to_csv('simulations.csv', index=False, encoding='utf-8-sig')
+time_df.to_csv('time.csv', index=False, encoding='utf-8-sig')
 
 res_df = pd.read_csv('simulations.csv')
 
