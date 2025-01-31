@@ -11,7 +11,7 @@ import time
 CHUNK_SIZE = 10
 
 # 避難人数
-NUM_OF_PEOPLE = 1000
+NUM_OF_PEOPLE = 5000
 
 # 必要ファイル
 NEEDS = [
@@ -25,7 +25,7 @@ NEEDS = [
 # ファイル名のプレフィックス(先頭につける文字列)
 PREFIX = f"{NUM_OF_PEOPLE}_"
 # ファイル名のサフィックス(末尾につける文字列)
-SUFFIX = '_length'
+SUFFIX = '_order_compare'
 
 ### WAIT PATTERNS ###
 # 何秒おきに人が出発するか
@@ -38,12 +38,41 @@ patterns = [
     # bpr('travel_time', 'far', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '提案手法 遠', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
     # bpr('travel_time', 'random', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '提案手法 ランダム', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
 
-    bpr('length', 'near', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '比較手法 近', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
-    bpr('length', 'far', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '比較手法 遠', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
-    bpr('length', 'random', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '比較手法 ランダム', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
+    # bpr('length', 'near', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '比較手法 近', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
+    # bpr('length', 'far', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '比較手法 遠', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
+    # bpr('length', 'random', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '比較手法 ランダム', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
 
     # bpr('travel_time', 'near', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '提案手法', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
     # bpr('length', 'near', NUM_OF_PEOPLE, [1.25, 1.0, 1.5], 1.919, 6.9373, '比較手法', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, BATCH_SIZE)),
+
+    # bpr('travel_time', 'near', 1000, [1.25], 1.919, 6.9373, '1000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'near', 2000, [1.25], 1.919, 6.9373, '2000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'near', 3000, [1.25], 1.919, 6.9373, '3000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'near', 4000, [1.25], 1.919, 6.9373, '4000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'near', 5000, [1.25], 1.919, 6.9373, '5000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'near', 6000, [1.25], 1.919, 6.9373, '6000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'near', 1600, [1.25], 1.919, 6.9373, '1600', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'near', 1700, [1.25], 1.919, 6.9373, '1700', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+
+
+    # bpr('travel_time', 'far', 1000, [1.25], 1.919, 6.9373, '1000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 2000, [1.25], 1.919, 6.9373, '2000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 3000, [1.25], 1.919, 6.9373, '3000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4000, [1.25], 1.919, 6.9373, '4000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 5000, [1.25], 1.919, 6.9373, '5000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 6000, [1.25], 1.919, 6.9373, '6000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    bpr('travel_time', 'near', 5000, [1.25], 1.919, 6.9373, 'Near 5000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    bpr('travel_time', 'far', 5000, [1.25], 1.919, 6.9373, 'Far 5000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4100, [1.25], 1.919, 6.9373, '4000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4200, [1.25], 1.919, 6.9373, '4200', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4300, [1.25], 1.919, 6.9373, '4000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4400, [1.25], 1.919, 6.9373, '4400', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4500, [1.25], 1.919, 6.9373, '4000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4600, [1.25], 1.919, 6.9373, '4600', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4700, [1.25], 1.919, 6.9373, '4000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4800, [1.25], 1.919, 6.9373, '4800', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 4900, [1.25], 1.919, 6.9373, '4000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
+    # bpr('travel_time', 'far', 5000, [1.25], 1.919, 6.9373, '5000', calcWaitInterval(WAIT_INTERVAL, NUM_OF_PEOPLE, NUM_OF_PEOPLE)),
 ]
 
 time_df = pd.DataFrame()
@@ -51,6 +80,7 @@ speed_df = pd.DataFrame()
 length_df = pd.DataFrame()
 wait_time_df = pd.DataFrame()
 res_df = pd.DataFrame()
+max_map = {}
 for i, pt in enumerate(patterns):
     print(f"{pt['title']}")
     p = pt['pattern']
@@ -90,6 +120,24 @@ for i, pt in enumerate(patterns):
     ev_time = res['evac_time']
     ev_time.index = np.arange(1, len(ev_time)+1)
     res_df[f'{pt["title"]}'] = ev_time
+
+    max_evac_time = res['evac_time'].max()
+    max_map[pt['pattern']['simulation']] = max_evac_time
+
+# max_df = pd.DataFrame.from_dict(max_map, orient='index')
+# max_df.to_csv(f"outputs/{PREFIX}max{SUFFIX}.csv", index=False, encoding='utf-8-sig')
+
+# plt.figure(figsize=(8, 5))
+# plt.plot(max_df.index, max_df[0], marker='o', markersize=1)
+
+# # 軸ラベルとタイトル
+# plt.xlabel('避難人数')
+# plt.ylabel('避難時間（秒）')
+# plt.title("最大避難時間")
+# plt.grid(True)
+
+# # グラフを表示
+# plt.savefig(f"plot/{PREFIX}max{SUFFIX}.png")
 
 if 'simulations' in NEEDS:
     res_df.to_csv(f"outputs/{PREFIX}simulations{SUFFIX}.csv", index=False, encoding='utf-8-sig')
