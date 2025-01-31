@@ -26,6 +26,7 @@ def simulate(
         simulations: int=3000,
         max_time: int=inf,
         human_speeds: list=[1.25],
+        wait_times: list=[0],
         default_human_speed: float=1.25,
         time_interval: float=1,
         arrival_callback=default_arrival_callback,
@@ -130,8 +131,7 @@ def simulate(
     path_length = len(paths)
     human_speeds.sort()
     speed_count = len(human_speeds)
-    # 近いほど遅い速度
-    sp_per_path = path_length // speed_count + 1
+    sp_per_path = ceil(path_length / speed_count)
     speed_list = []
 
     speed_map = {}
@@ -147,7 +147,17 @@ def simulate(
     elif (order == 'far'):
         paths.sort(key=lambda x: x[0], reverse=True)
     elif (order == 'random'):
-        rnd.shuffle(paths)
+        paths = rnd.shuffle(paths)
+
+    wait_times.sort()
+    wait_count = len(wait_times)
+    wait_per_path = ceil(path_length / wait_count)
+    wait_list = []
+    wait_map = {}
+    for i, path in enumerate(c_paths):
+        wait = i // wait_per_path
+        wait_list.append(wait_times[wait])
+        wait_map[path[2]] = wait_times[wait]
     
     # 避難者の状態
     yet = []
@@ -210,6 +220,9 @@ def simulate(
         for i, current in enumerate(yet):
             if fin_evacuate[i]: # 避難完了した避難者はスキップ
                 continue
+            if wait_list[i] > 0: # 待ち時間がある場合
+                wait_list[i] -= time_interval
+                continue
             # 今のノードからどれだけ時間が経過したか
             current["from_index"] += time_interval
             # 時間が経過したら次のノードに移動
@@ -217,7 +230,6 @@ def simulate(
                 source_target = current["node_to_node"]
                 # 今のノードから出る人数をマイナス
                 pass_count_dict[source_target] -= 1
-                human = paths[i]
                 # 更新後移動時間を計算
                 after_bpr_time = compute_travel_time(
                     n_di_dict[source_target], 
@@ -292,6 +304,7 @@ def simulate(
     simulation_df = pd.DataFrame.from_dict(evac_time, orient='index', columns=['evac_time'])
     simulation_df['speed'] = simulation_df.index.map(speed_map)
     simulation_df['length'] = simulation_df.index.map(length_map)
+    simulation_df['wait_time'] = simulation_df.index.map(wait_map)
     simulation_df['evac_time'] = simulation_df['evac_time'].astype(float)
     simulation_df = simulation_df.sort_values(by='evac_time')
     

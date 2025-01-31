@@ -28,6 +28,7 @@ def exponential(
         v_min: float = 0.03,
         exponential_alpha: float = 2.0,
         title: str = None,
+        wait_times: list = [0.0],
 ) -> dict:
     # title = f'Exponential {weight.capitalize()} {order.capitalize()} {simulation} {human_speeds.__str__()} {v_min} {exponential_alpha}'
     if title is None:
@@ -44,6 +45,7 @@ def exponential(
         'exponential_alpha': exponential_alpha,
         'bpr_alpha': DEFAULT_BPR_ALPHA,
         'bpr_beta': DEFAULT_BPR_BETA,
+        'wait_times': wait_times,
     }
     return {
         'title': title,
@@ -58,6 +60,7 @@ def bpr(
         bpr_alpha: float = DEFAULT_BPR_ALPHA,
         bpr_beta: float = DEFAULT_BPR_BETA,
         title: str = None,
+        wait_times: list = [0.0],
 ) -> dict:
     # title = f'BPR {weight.capitalize()} {order.capitalize()} {simulation} {human_speeds.__str__()} {bpr_alpha} {bpr_beta}'
     if title is None:
@@ -73,6 +76,7 @@ def bpr(
         'exponential_alpha': 2.0,
         'bpr_alpha': bpr_alpha,
         'bpr_beta': bpr_beta,
+        'wait_times': wait_times,
     }
     return {
         'title': title,
@@ -86,6 +90,7 @@ def greenshields(
         human_speeds: list = [1.25],
         v_min: float = 0.03,
         title: str = None,
+        wait_times: list = [0.0],
 ) -> dict:
     # title = f'Greenshields {weight.capitalize()} {order.capitalize()} {simulation} {human_speeds.__str__()} {v_min}'
     if title is None:
@@ -101,6 +106,7 @@ def greenshields(
         'exponential_alpha': 2.0,
         'bpr_alpha': DEFAULT_BPR_ALPHA,
         'bpr_beta': DEFAULT_BPR_BETA,
+        'wait_times': wait_times,
     }
     return {
         'title': title,
